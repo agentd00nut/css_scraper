@@ -44,6 +44,7 @@ CssExtractor.prototype.extract = function(body, merge=true, simple_merge=true){
         result.file = this.select( body, this.selectors.file, merge )
     }
     if( this.selectors.link ){
+
         result.link = this.select( body, this.selectors.link, merge )
     }
     if( this.selectors.text ){

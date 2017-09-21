@@ -7,11 +7,13 @@ Combine the output to easily read the results.
 
 Dump the output raw for easy processing with other tools or to disk.
 
-_Scrape multiple pages by specifying a next link selector or by specifying how a url paginates_
+Scrape multiple pages by specifying a next link selector and how many pages to scrape
 
-_Control on what page to start or stop scraping._
+_Scrape multiple pages by specifying how a url paginates_
 
-_Specify page timeouts._
+_Control on what page to start scraping_
+
+_Specify load timeouts._
 
 _Use sleep intervals to wait before getting the next page so you don't bother web admins._
 
@@ -36,13 +38,16 @@ Lets pull article titles, links, when they were posted, and the user that posted
 
 # Usage
 ```
-  -t, --text=text_selectors+  Raw Text Selectors.
-  -f, --file=file_selectors+  SRC selectors.
-  -l, --link=link_selectors+  Link Selectors, Auto grabs anchor text.
-  -u, --url=url               Url to scrape from
-  -r, --raw                   Output raw data, suitable for piping to other commands or a file.
-  -c, --combine               Merge output into lines instead of displaying a dictionary.
-  -h, --help                  display this help
+  -t, --text=text_selectors+                Raw Text Selectors.
+  -f, --file=file_selectors+                SRC selectors.
+  -l, --link=link_selectors+                Link Selectors, Auto grabs anchor text.
+  -u, --url=url                             Url to scrape from
+  -n, --next_page=next_page_selector        Selector to find the link to the next page.
+      --next_page_prefix=next_page_prefix   A prefix to append to the href found with next_page_selector
+  -p, --page_limit=page_limit               Max number of pages to scrape.
+  -r, --raw                                 Output raw data, suitable for piping to other commands or a file.
+  -c, --combine                             Merge output into lines instead of a dictionary.
+  -h, --help                                display this help
 ```
 
 *-t, -f, -l* Are used to specify the css selectors you want to use to scrape the web page with.  You can specify an unlimited number of selectors for each type by passing the flag more than once.
@@ -55,7 +60,11 @@ Selectors of the same type will get combined.  In the example above we combine t
 *-l* Will pull the "href=" value from anything matched by the selectors, but also the anchor text.
 Since the anchor text is grabbed it's not necessary to use a *-t* selector to get the text for links.
 
-*-u* The url to scrape from, multiple urls are not yet supported.
+*-u* The url to scrape from, multiple urls are not yet supported. Urls MUST contain "http://" or "https://".
+
+*-n* Specify a selector to use when finding the link for the next page to scrape.  Will use the href value of whatever it selects.
+
+*--next_page_prefix* Use if the next page selectors href value isn't a full valid url.  Urls MUST contain "http://" or "https://".
 
 *-r* Makes the output suitable for parsing by other commands.  Generally you will want this flag off while verifying you are grabbing the right stuff and turn it on to get useable output.
 
@@ -77,6 +86,13 @@ _A future flag will allow for specifying a prefix string instead of using awk_
 ```
 node css_scrape.js -u "https://www.reddit.com/" -t ".linklisting div .unvoted + .score" -t ".linklisting .title > a" -t ".entry .comments" -t ".entry .live-timestamp" -t ".entry .author" -t ".entry .subreddit" -c -r
 ```
+
+## Reddit again but get the first 2 pages 
+```
+node css_scrape.js -u "https://www.reddit.com/" -t ".linklisting div .unvoted + .score" -l ".linklisting .title > a" -t ".entry .comments" -t ".entry .live-timestamp" -t ".entry .author" -t ".entry .subreddit" -n ".next-button > a" -c -r -p 2
+```
+We us the *-n* flag to specify the link that will take us to the next page and the *-p* flag to indicate we only want the first two pages.
+
 
 # Known Issues
 ## Skewed Results From Missing Elements
