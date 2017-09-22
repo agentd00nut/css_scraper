@@ -1,14 +1,18 @@
 var request = require('request');
 var cheerio = require('cheerio');
+const Parser = require("./Parser.js");
+const CssExtractor = require("./CssExtractor.js");
 
 opt = require('node-getopt').create([
   ['t' , 'text=text_selectors+', 'Raw Text Selectors. '],
   ['f' , 'file=file_selectors+', 'SRC selectors.'],
   ['l' , 'link=link_selectors+', 'Link Selectors, Auto grabs anchor text.'],
   ['u' , 'url=url', 'Url to scrape from'],
+  ['d' , 'depth_page=depth_page_selector', 'Selector to find links we should dive into and scrape.'],
+  [''  , 'depth_page_prefix=depth_page_prefix', "Prefix to prepend to the href found with depth_page_selector"],
   ['n' , 'next_page=next_page_selector', 'Selector to find the link to the next page.'],
-  ['t' , 'timeout=timeout', 'Time in milliseconds to wait for response from server on request.'],
-  ['' ,  'next_page_prefix=next_page_prefix', 'A prefix to prepend to the href found with next_page_selector'],
+  ['o' , 'timeout=timeout', 'Time in milliseconds to wait for response from server on request.'],
+  [''  , 'next_page_prefix=next_page_prefix', 'A prefix to prepend to the href found with next_page_selector'],
   ['p' , 'page_limit=page_limit', 'Max number of pages to scrape.'],
   ['s' , 'start_page=start_page', 'If paginating, dont get data for pages before this value.'],
   ['i' , 'sleep_interval=sleep_interval', 'Amount of time, in milliseconds, to wait before getting the next page when paginating'],
@@ -19,7 +23,6 @@ opt = require('node-getopt').create([
 ])              
 .bindHelp()     
 .parseSystem(); 
-
 
 function get_url(url, cb){
     
@@ -66,9 +69,45 @@ function get_url_follow_link(url, cb){
                     
                     setTimeout( function(){ get_url_follow_link( next_url , function(body){
                         process_body(body);
-                    })}, sleep_interval);;
+                    })}, sleep_interval);
                 }
             }
+
+        }else{
+
+            console.log(url, response, error);
+
+        }
+    });
+}
+
+function get_url_scrape_links(url){
+
+    var options = {
+      headers: {'user-agent': 'node.js'},
+      timeout: timeout,
+      uri: url
+    }
+
+    request(options, function (error, response, body) {
+        if (!error && response.statusCode == 200){
+
+            //if( page >= start_page ){
+            //    cb( body );
+            //}
+                
+            depth_urls = depth_page_parse.link( depth_page_ext.extract(body, true, false).link );
+            // depth_url.length            
+
+            for(var i=0; i<depth_urls.length  ; i++){
+
+                let depth_url = depth_urls[i].href
+
+                setTimeout( function() { get_url( depth_url, function(body){
+                    process_body(body);
+                })}, sleep_interval*i);
+            }
+                
 
         }else{
 
@@ -105,6 +144,7 @@ function raw_output(out_dict){
 function process_body(body){
 
     data = ext.extract(body, merge=true, simple_merge=false);
+
 
     link        = parse.link(data.link);
     text        = parse.text(data.text);
@@ -163,8 +203,10 @@ if(opt.options.start_page){
 }
 
 let next_page_prefix=false;
+let next_page_parse=false;
 if(opt.options.next_page_prefix){
     next_page_prefix = opt.options.next_page_prefix;
+    next_page_parse = new Parser({'link_prefix':next_page_prefix});
 }
 
 
@@ -183,11 +225,23 @@ if(opt.options.link_prefix){
     link_prefix = opt.options.link_prefix;
 }
 
+let depth_page=false;
+let depth_page_parse=false;
+let depth_page_prefix=false;
+let depth_page_ext;
+if(opt.options.depth_page_prefix){
+    depth_page_prefix=opt.options.depth_page_prefix;
+    depth_page_parse = new Parser({'link_prefix': depth_page_prefix});
+}
+
+if(opt.options.depth_page){
+    depth_page = opt.options.depth_page;
+    depth_page_ext = new CssExtractor({'link':[depth_page]});
+}
 
 
 /// INIT -- Extractors and Parsers
 
-const CssExtractor = require("./CssExtractor.js");
 let ext = new CssExtractor( selectors );
 
 let next_ext;
@@ -195,18 +249,17 @@ if(opt.options.next_page){
     next_ext = new CssExtractor( {"link": [opt.options.next_page]} )
 }
 
-
-
-const Parser = require("./Parser.js");
 let parse = new Parser({'link_prefix':link_prefix});
-let next_page_parse = new Parser({'link_prefix':next_page_prefix});
-
 
 
 
 // MAIN 
+if( depth_page ){
 
-if( opt.options.next_page ){
+
+    get_url_scrape_links(url)
+
+}else if( opt.options.next_page ){
 
 
     get_url_follow_link( url, function(body){
