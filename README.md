@@ -9,17 +9,17 @@ Dump the output raw for easy processing with other tools or to disk.
 
 Scrape multiple pages by specifying a next link selector and how many pages to scrape
 
+Control what page to start scraping on.
+
+Specify load timeouts.
+
+Use sleep intervals to wait before getting the next page.
+
+Specify prefix  text to add to links or file src's
+
 _Scrape multiple pages by specifying how a url paginates_
 
-_Control on what page to start scraping_
-
-_Specify load timeouts._
-
-_Use sleep intervals to wait before getting the next page so you don't bother web admins._
-
 _Specify custom delimiters for output_
-
-_Specify pre or post text to add to links or file src's_
 
 _italics_ are soon to be features.
 
@@ -38,16 +38,20 @@ Lets pull article titles, links, when they were posted, and the user that posted
 
 # Usage
 ```
-  -t, --text=text_selectors+                Raw Text Selectors.
-  -f, --file=file_selectors+                SRC selectors.
-  -l, --link=link_selectors+                Link Selectors, Auto grabs anchor text.
-  -u, --url=url                             Url to scrape from
-  -n, --next_page=next_page_selector        Selector to find the link to the next page.
-      --next_page_prefix=next_page_prefix   A prefix to append to the href found with next_page_selector
-  -p, --page_limit=page_limit               Max number of pages to scrape.
-  -r, --raw                                 Output raw data, suitable for piping to other commands or a file.
-  -c, --combine                             Merge output into lines instead of a dictionary.
-  -h, --help                                display this help
+  -t, --text=text_selectors+               Raw Text Selectors.
+  -f, --file=file_selectors+               SRC selectors.
+  -l, --link=link_selectors+               Link Selectors, Auto grabs anchor text.
+  -u, --url=url                            Url to scrape from
+  -n, --next_page=next_page_selector       Selector to find the link to the next page.
+  -t, --timeout=timeout                    Time in milliseconds to wait for response from server on request.
+      --next_page_prefix=next_page_prefix  A prefix to prepend to the href found with next_page_selector
+  -p, --page_limit=page_limit              Max number of pages to scrape.
+  -s, --start_page=start_page              If paginating, dont get data for pages before this value.
+  -i, --sleep_interval=sleep_interval      Amount of time, in milliseconds, to wait before getting the next page when paginating
+  -r, --raw                                Output raw data, suitable for piping to other commands or a file.
+  -c, --combine                            Merge output into lines instead of a dictionary.
+      --link_prefix=link_prefix            A prefix to prepend to the href found for all link selectors.
+  -h, --help                               display this help
 ```
 
 *-t, -f, -l* Are used to specify the css selectors you want to use to scrape the web page with.  You can specify an unlimited number of selectors for each type by passing the flag more than once.

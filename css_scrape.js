@@ -7,10 +7,14 @@ opt = require('node-getopt').create([
   ['l' , 'link=link_selectors+', 'Link Selectors, Auto grabs anchor text.'],
   ['u' , 'url=url', 'Url to scrape from'],
   ['n' , 'next_page=next_page_selector', 'Selector to find the link to the next page.'],
-  ['' ,  'next_page_prefix=next_page_prefix', 'A prefix to append to the href found with next_page_selector'],
+  ['t' , 'timeout=timeout', 'Time in milliseconds to wait for response from server on request.'],
+  ['' ,  'next_page_prefix=next_page_prefix', 'A prefix to prepend to the href found with next_page_selector'],
   ['p' , 'page_limit=page_limit', 'Max number of pages to scrape.'],
+  ['s' , 'start_page=start_page', 'If paginating, dont get data for pages before this value.'],
+  ['i' , 'sleep_interval=sleep_interval', 'Amount of time, in milliseconds, to wait before getting the next page when paginating'],
   ['r' , 'raw', 'Output raw data, suitable for piping to other commands or a file.'],
   ['c' , 'combine', 'Merge output into lines instead of a dictionary. '],
+  [''  , 'link_prefix=link_prefix', 'A prefix to prepend to the href found for all link selectors.'],
   ['h' , 'help'                    , 'display this help'],
 ])              
 .bindHelp()     
@@ -20,17 +24,19 @@ opt = require('node-getopt').create([
 function get_url(url, cb){
     
     var options = {
-      headers: {'user-agent': 'node.js'}
+      headers: {'user-agent': 'node.js'},
+      timeout: timeout,
+      uri: url
     }
 
-    request(url, options, function (error, response, body) {
+    request(options, function (error, response, body) {
         if (!error && response.statusCode == 200){
             
             cb( body );
 
         }else{
 
-            console.log(url, response.statusCode, error);
+            console.log(url, response, error);
 
         }
     });
@@ -39,35 +45,34 @@ function get_url(url, cb){
 function get_url_follow_link(url, cb){
     //console.log("FETCHING",url);
     var options = {
-      headers: {'user-agent': 'node.js'}
+      headers: {'user-agent': 'node.js'},
+      timeout: timeout,
+      uri: url
     }
 
-    request(url, options, function (error, response, body) {
+    request(options, function (error, response, body) {
         if (!error && response.statusCode == 200){
-            
-            cb( body );
+            page ++;
+
+            if( page >= start_page ){
+                cb( body );
+            }
             
             if( opt.options.next_page ){
-                page ++;
-                
-                
+                     
                 if( page < page_limit){
                 
-                    next_url = parse.link( next_ext.extract(body, true, false).link )[0].href;
-                    if(next_page_prefix){
-                        next_url = next_page_prefix + next_url;
-                    }
-
-                    get_url_follow_link( next_url , function(body){
+                    next_url = next_page_parse.link( next_ext.extract(body, true, false).link )[0].href;
+                    
+                    setTimeout( function(){ get_url_follow_link( next_url , function(body){
                         process_body(body);
-                    });
+                    })}, sleep_interval);;
                 }
-                
             }
 
         }else{
 
-            console.log(url, response.statusCode, error);
+            console.log(url, response, error);
 
         }
     });
@@ -96,10 +101,7 @@ function raw_output(out_dict){
     }
 }
 
-/*
-    This should return the processed output instead of logging to console.
-    The processed output should contain the next page unstead of just returning it.
-*/
+
 function process_body(body){
 
     data = ext.extract(body, merge=true, simple_merge=false);
@@ -136,7 +138,7 @@ function process_body(body){
 }
 
 
-
+/// INIT -- Args and Globals
 
 selectors={}
 if( opt.options.text ){ selectors.text = opt.options.text }
@@ -150,10 +152,14 @@ if( url.indexOf("http") == -1 ){
 
 let page_limit;
 let page=0;
+let start_page=-1
 if(opt.options.page_limit){
     page_limit = opt.options.page_limit
 }else{
     page_limit=1;
+}
+if(opt.options.start_page){
+    start_page=opt.options.start_page;
 }
 
 let next_page_prefix=false;
@@ -161,6 +167,25 @@ if(opt.options.next_page_prefix){
     next_page_prefix = opt.options.next_page_prefix;
 }
 
+
+let timeout=10000;
+if(opt.options.timeout){
+    timeout = opt.options.timeout;
+}
+
+let sleep_interval=1;
+if(opt.options.sleep_interval){
+    sleep_interval = opt.options.sleep_interval;
+}
+
+let link_prefix=false;
+if(opt.options.link_prefix){
+    link_prefix = opt.options.link_prefix;
+}
+
+
+
+/// INIT -- Extractors and Parsers
 
 const CssExtractor = require("./CssExtractor.js");
 let ext = new CssExtractor( selectors );
@@ -173,10 +198,13 @@ if(opt.options.next_page){
 
 
 const Parser = require("./Parser.js");
-let parse = new Parser();
+let parse = new Parser({'link_prefix':link_prefix});
+let next_page_parse = new Parser({'link_prefix':next_page_prefix});
 
 
 
+
+// MAIN 
 
 if( opt.options.next_page ){
 

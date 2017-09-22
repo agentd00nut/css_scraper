@@ -1,5 +1,10 @@
 
-function Parser(){
+function Parser(options){
+    
+    if(options.link_prefix){ 
+        this.link_prefix = options.link_prefix;
+    }
+
 }
 
 Parser.prototype.text = function(data, cb){
@@ -34,11 +39,18 @@ Parser.prototype.text = function(data, cb){
 Parser.prototype.link = function(data, cb){
     var result = [];
     
+
     if(! data ){ return result }
 
     data.forEach( function(e){ 
-        result.push( { "anchor":$(e).text().trim(), "href":$(e).attr('href') } );
-    });
+
+        var href = $(e).attr('href');
+        if( this.link_prefix ){
+            href = this.link_prefix+href;
+        }
+
+        result.push( { "anchor":$(e).text().trim(), "href":href } );
+    }, this);
 
     if(cb){ cb(result); }
 
