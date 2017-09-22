@@ -112,6 +112,12 @@ node css_scrape.js -u "https://www.reddit.com/" -t ".linklisting div .unvoted + 
 ```
 We us the *-n* flag to specify the link that will take us to the next page and the *-p* flag to indicate we only want the first two pages.
 
+## Get every image from every story on front page of [Hacker News](https://news.ycombinator.com/)
+```
+  node css_scrape.js -u "https://news.ycombinator.com/" -d ".storylink" -f "img" -r -i 1000
+```
+Not sure why you would want to do this but it's rediculously easy to do using the **-d** command.
+**-i** Will make the scraper wait 1 second between fetching the image links for each `.storylink`.
 
 # Known Issues
 ## Skewed Results From Missing Elements

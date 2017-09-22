@@ -92,12 +92,8 @@ function get_url_scrape_links(url){
     request(options, function (error, response, body) {
         if (!error && response.statusCode == 200){
 
-            //if( page >= start_page ){
-            //    cb( body );
-            //}
                 
             depth_urls = depth_page_parse.link( depth_page_ext.extract(body, true, false).link );
-            // depth_url.length            
 
             for(var i=0; i<depth_urls.length  ; i++){
 
@@ -231,8 +227,10 @@ let depth_page_prefix=false;
 let depth_page_ext;
 if(opt.options.depth_page_prefix){
     depth_page_prefix=opt.options.depth_page_prefix;
-    depth_page_parse = new Parser({'link_prefix': depth_page_prefix});
 }
+depth_page_parse = new Parser({'link_prefix': depth_page_prefix});
+
+
 
 if(opt.options.depth_page){
     depth_page = opt.options.depth_page;
