@@ -9,6 +9,7 @@ function CssExtractor(css_selectors, output){
     this.css_selectors = css_selectors;
     this.output = output;
 }
+
 CssExtractor.prototype.select = function(body, selectors, merge=true){
     var result = [];
     $ = cheerio.load(body);

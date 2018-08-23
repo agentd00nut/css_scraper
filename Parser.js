@@ -5,6 +5,10 @@ function Parser(options){
         this.link_prefix = options.link_prefix;
     }
 
+    if(options.link_postfix){ 
+        this.link_postfix = options.link_postfix;
+    }
+
 }
 
 Parser.prototype.text = function(data, cb){
@@ -47,6 +51,9 @@ Parser.prototype.link = function(data, cb){
         var href = $(e).attr('href');
         if( this.link_prefix ){
             href = this.link_prefix+href;
+        }
+        if( this.link_postfix ){
+            href = href+this.link_postfix;
         }
 
         result.push( { "anchor":$(e).text().trim(), "href":href } );

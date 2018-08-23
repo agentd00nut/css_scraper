@@ -10,6 +10,8 @@ opt = require('node-getopt').create([
   ['u' , 'url=url', 'Url to scrape from'],
   ['d' , 'depth_page=depth_page_selector', 'Selector to find links we should dive into and scrape.'],
   [''  , 'depth_page_prefix=depth_page_prefix', "Prefix to prepend to the href found with depth_page_selector"],
+  [''  , 'depth_page_postfix=depth_page_postfix', "PostFix to postpend to the href found with depth_page_selector"],
+
   ['n' , 'next_page=next_page_selector', 'Selector to find the link to the next page.'],
   ['o' , 'timeout=timeout', 'Time in milliseconds to wait for response from server on request.'],
   [''  , 'next_page_prefix=next_page_prefix', 'A prefix to prepend to the href found with next_page_selector'],
@@ -91,7 +93,7 @@ function get_url_scrape_links(url){
 
     request(options, function (error, response, body) {
         if (!error && response.statusCode == 200){
-
+            page++;
                 
             depth_urls = depth_page_parse.link( depth_page_ext.extract(body, true, false).link );
 
@@ -103,7 +105,18 @@ function get_url_scrape_links(url){
                     process_body(body);
                 })}, sleep_interval*i);
             }
+            
+            if( opt.options.next_page ){
+                     
+                if( page < page_limit){
                 
+                    next_url = next_page_parse.link( next_ext.extract(body, true, false).link )[0].href;
+                    
+                    setTimeout( function(){ get_url_scrape_links( next_url , function(body){
+                        process_body(body);
+                    })}, sleep_interval);
+                }
+            }
 
         }else{
 
@@ -139,15 +152,14 @@ function raw_output(out_dict){
 
 function process_body(body){
 
-    data = ext.extract(body, merge=true, simple_merge=false);
-
+    data = ext.extract(body, merge=false, simple_merge=true);
 
     link        = parse.link(data.link);
     text        = parse.text(data.text);
     file        = parse.src(data.file);
     combined=[];
 
-    
+
     if( opt.options.combine ){
         if(  opt.options.raw ) {
 
@@ -224,11 +236,15 @@ if(opt.options.link_prefix){
 let depth_page=false;
 let depth_page_parse=false;
 let depth_page_prefix=false;
+let depth_page_postfix=false;
 let depth_page_ext;
 if(opt.options.depth_page_prefix){
     depth_page_prefix=opt.options.depth_page_prefix;
 }
-depth_page_parse = new Parser({'link_prefix': depth_page_prefix});
+if(opt.options.depth_page_postfix){
+    depth_page_postfix=opt.options.depth_page_postfix;
+}
+depth_page_parse = new Parser({'link_prefix': depth_page_prefix, 'link_postfix':depth_page_postfix});
 
 
 
@@ -252,12 +268,11 @@ let parse = new Parser({'link_prefix':link_prefix});
 
 
 // MAIN 
-if( depth_page ){
-
+if( depth_page  ){
 
     get_url_scrape_links(url)
 
-}else if( opt.options.next_page ){
+}else if( opt.options.next_page && ! depth_page){
 
 
     get_url_follow_link( url, function(body){
